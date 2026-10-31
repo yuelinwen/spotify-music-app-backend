@@ -88,6 +88,26 @@ app.get("/",(req,res)=>{
     });
 })
 
+// Apple's chart feed serves no Access-Control-Allow-Origin header, so the
+// browser cannot read it directly. Everything else the app needs comes from
+// itunes.apple.com, which does send one.
+app.get("/api/music/new-releases", function (req, res) {
+    fetch("https://rss.marketingtools.apple.com/api/v2/us/music/most-played/20/albums.json")
+        .then((feed) => {
+            if (!feed.ok) {
+                throw new Error("feed responded " + feed.status);
+            }
+            return feed.json();
+        })
+        .then((data) => {
+            res.status(200).json(data.feed.results);
+        })
+        .catch((err) => {
+            console.log("unable to load the chart feed: " + err);
+            res.status(502).json({ "message": "Unable to load new releases" });
+        });
+})
+
 app.post("/api/user/register", withDatabase(function (req, res) {
     return userService.registerUser(req.body)
         .then((msg) => {
